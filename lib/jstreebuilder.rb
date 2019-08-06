@@ -11,6 +11,7 @@ require 'polyrex'
 XSLT = %q[
 <xsl:stylesheet xmlns:xsl='http://www.w3.org/1999/XSL/Transform' version='1.0'>
   <xsl:output method="xml" indent="yes" omit-xml-declaration="yes" />
+
   <xsl:template match='entries'>
 
     <xsl:element name='ul'>
@@ -36,7 +37,17 @@ XSLT = %q[
       </xsl:when>
       <xsl:otherwise>
         <xsl:element name='li'>      
+          <xsl:choose>
+            <xsl:when test='summary/url != ""'>
+            <xsl:element name='a'>
+              <xsl:attribute name='href'><xsl:value-of select='summary/url'/></xsl:attribute>
+              <xsl:value-of select='summary/title'/>      
+            </xsl:element>
+            </xsl:when>
+            <xsl:otherwise>
           <xsl:value-of select='summary/title'/>      
+            </xsl:otherwise>
+          </xsl:choose>
         </xsl:element>
       </xsl:otherwise>
       </xsl:choose>
@@ -190,15 +201,23 @@ EOF
 
   def tree(opt={})
 
-    tree = opt[:xml]  
+    tree = opt[:src]  
     
-    schema = 'entries/entry[title]'
-    xslt_schema = 'tree/item[@title:title]'
+    s = if tree =~ /<tree>/ then
+      
+      schema = 'entries/entry[title]'
+      xslt_schema = 'tree/item[@title:title]'
 
-    # transform the tree xml into a polyrex document
-    pxsl = PolyrexXSLT.new(schema: schema, xslt_schema: xslt_schema).to_xslt
-    puts 'pxsl: ' + pxsl if @debug
-    px = Polyrex.new(Rexslt.new(pxsl, tree).to_s)
+      # transform the tree xml into a polyrex document
+      pxsl = PolyrexXSLT.new(schema: schema, xslt_schema: xslt_schema).to_xslt
+      puts 'pxsl: ' + pxsl if @debug
+      Rexslt.new(pxsl, tree).to_s
+      
+    elsif tree =~ /<?polyrex / 
+      tree
+    end
+    
+    px = Polyrex.new(s)
 
     # transform the polyrex xml into a nested HTML list
     #@ul = Rexslt.new(px.to_xml, XSLT).to_xml
@@ -211,4 +230,3 @@ EOF
   end
 
 end
-
