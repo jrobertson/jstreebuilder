@@ -1,4 +1,4 @@
-# Introducing the jstreebuilder gem
+# Building an HTML tree using the JsTreeBuilder gem
 
 ## Usage
 
@@ -19,7 +19,7 @@
         <item title='apple'/>
       </item>
       <item title='mealtime'>
-        <item title='melon'/>
+        <item title='melon' url='http://a0.jamesrobertson.eu'/>
         <item title='cheese burger'/>
         <item title='milk shake'/>
       </item>
@@ -28,12 +28,27 @@
     </tree>
     "
 
-    jtb = JsTreeBuilder.new :tree, {xml: tree, debug: true}
-    File.write '/tmp/tree3.html',  jtb.to_webpage
-    `firefox /tmp/tree3.html`
+    ## or
 
-## Resources
+    tree ="
+    <?polyrex schema='entries[title]/entry[title,url]' delimiter=' # '?>
+    title: Links to Foo
 
-* jstreebuilder https://rubygems.org/gems/jstreebuilder
+    foo bar # http://someexamplewebsite.com/do/fun/rrr
+      foo2 # http://someexamplewebsite.com/do/fun2/rrr
+      foo3 # http://someexamplewebsite.com/do/fun3/rrr
+    doo # http://someexamplewebsite.com/do/dun/eee
+    "
 
-jstreebuilder tree html gem builder
+    #jtb = JsTreeBuilder.new :tree, {src: tree, debug: true}
+    jtb = JsTreeBuilder.new({src: tree, debug: true})
+    File.write '/tmp/tree4.html',  jtb.to_webpage
+    `firefox /tmp/tree4.html`
+
+## Output
+
+Screenshot as observed from the browser window:
+
+![](http://a0.jamesrobertson.eu/r/images/2019/sep/15/jstree.png)
+
+jstreebuilder tree
