@@ -5,7 +5,7 @@
 require 'nokogiri'
 require 'polyrex-xslt'
 require 'polyrex'
-
+require 'kramdown'
 
 
 XSLT = %q[
@@ -28,7 +28,20 @@ XSLT = %q[
 
         <xsl:element name='li'>
 
-          <span class="caret"><xsl:value-of select='summary/title'/></span>
+          <xsl:element name='span'>      
+            <xsl:attribute name="class">caret</xsl:attribute>
+            <xsl:choose>
+              <xsl:when test='summary/url != ""'>
+              <xsl:element name='a'>
+                <xsl:attribute name='href'><xsl:value-of select='summary/url'/></xsl:attribute>
+                <xsl:value-of select='summary/title'/>      
+              </xsl:element>
+              </xsl:when>
+              <xsl:otherwise>
+            <xsl:value-of select='summary/title'/>      
+              </xsl:otherwise>
+            </xsl:choose>
+          </xsl:element>
           <ul class='nested'>
             <xsl:apply-templates select='records/entry' />
           </ul>
@@ -103,6 +116,47 @@ ul, #myUL {
 }
 ]
 
+SIDEBAR_CSS = TREE_CSS + %q[
+  
+body {
+  font-family: "Lato", sans-serif;
+}
+
+.sidenav {
+  width: 25%;
+  position: fixed;
+  z-index: 1;
+  top: 20px;
+  left: 10px;
+  background: #eee;
+  overflow-x: hidden;
+  padding: 12px 0;
+}
+
+.sidenav a {
+  padding: 2px 8px 2px 6px;
+  text-decoration: none;
+  font-size: 23px;
+  color: #2166F3;
+
+}
+
+.sidenav a:hover {
+  color: #064579;
+}
+
+.main {
+  margin-left: 25%; /* Same width as the sidebar + left position in px */
+  font-size: 26px; /* Increased text to enable scrolling */
+  padding: 0px 10px;
+}
+
+@media screen and (max-height: 450px) {
+  .sidenav {padding-top: 15px;}
+  .sidenav a {font-size: 19 px;}
+}
+]
+
 TREE_JS =<<EOF
 var toggler = document.getElementsByClassName("caret");
 var i;
@@ -115,6 +169,82 @@ for (i = 0; i < toggler.length; i++) {
 }
 EOF
 
+SIDEBAR_JS = TREE_JS
+
+  class TreeBuilder
+    using ColouredText
+
+    attr_reader :to_tree
+
+    def initialize(s, debug: false)
+
+      @debug = debug
+      html = Kramdown::Document.new(s).to_html
+      puts ('html: ' + html.inspect) if @debug
+      a = scan_headings(html)
+      puts ('a: ' + a.inspect) if @debug
+      
+      s2 = make_tree(a)
+      puts ('s2: ' + s2.inspect) if @debug
+      tree = LineTree.new(s2).to_tree
+      
+      puts ('tree: ' + tree.inspect).debug if @debug
+      
+      doc = Rexle.new(tree)
+      doc.root.each_recursive do |node|
+        
+        h = node.attributes        
+        puts ('h: ' + h.inspect).debug if @debug
+        h[:url] = '#' + h[:title].strip.downcase.gsub(' ', '-')
+        
+      end
+      puts ('doc.xml: ' + doc.xml.inspect) if @debug
+      
+      @to_tree = doc.xml pretty: true
+
+    end
+    
+    def make_tree(a, indent=0, hn=1)
+      
+      if @debug then
+        puts 'inside make_tree'.debug 
+        puts ('a: ' + a.inspect).debug
+      end
+      
+      a.map.with_index do |x, i|
+        
+        puts ('x: ' + x.inspect).debug if @debug
+        
+        if x.is_a? Array then
+
+          puts 'before make_tree()'.info if @debug
+          
+          make_tree(x, indent+1, hn)
+
+        else
+
+          next unless x =~ /<h[#{hn}-4]/
+          space = i == 0 ? indent-1 : indent
+          heading = ('  ' * space) + x[/(?<=\>)[^<]+/]
+          puts ('heading: ' + heading.inspect).debug if @debug
+          heading
+
+        end
+
+      end.compact.join("\n")
+
+    end    
+
+    def scan_headings(s, n=1)
+      
+      s.split(/(?=<h#{n})/).map do |x| 
+        x.include?('<h' + (n+1).to_s) ? scan_headings(x, n+1) : x
+      end
+
+    end
+
+  end
+
 
   attr_reader :html, :css, :js
 
@@ -123,12 +253,13 @@ EOF
     if unknown.is_a? String or unknown.is_a? Symbol then
       type = unknown.to_sym
     elsif unknown.is_a? Hash
-      options = unknown
+      options = {type: :tree}.merge(unknown)
+      type = options[:type]
     end
     
     @debug = options[:debug]
 
-    @types = %i(tree)
+    @types = %i(tree sidebar)
     
     build(type, options) if type
 
@@ -198,35 +329,51 @@ EOF
   
   end
   
+  def build_px(tree)
+    
+    schema = 'entries/entry[title, url]'
+    xslt_schema = 'tree/item[@title:title, @url:url]'
+
+    # transform the tree xml into a polyrex document
+    pxsl = PolyrexXSLT.new(schema: schema, xslt_schema: xslt_schema).to_xslt
+    puts 'pxsl: ' + pxsl if @debug
+    Rexslt.new(pxsl, tree).to_s    
+    
+  end
+  
 
   def tree(opt={})
 
-    tree = opt[:src]  
+    src = opt[:src]  
     
-    s = if tree =~ /<tree>/ then
+    s = if src =~ /<tree>/ then
       
-      schema = 'entries/entry[title]'
-      xslt_schema = 'tree/item[@title:title]'
-
-      # transform the tree xml into a polyrex document
-      pxsl = PolyrexXSLT.new(schema: schema, xslt_schema: xslt_schema).to_xslt
-      puts 'pxsl: ' + pxsl if @debug
-      Rexslt.new(pxsl, tree).to_s
+      build_px(src)
       
-    elsif tree =~ /<?polyrex / 
-      tree
+    elsif src =~ /<?polyrex / 
+      src
+    else
+      build_px(TreeBuilder.new(src, debug: @debug).to_tree)
     end
     
+    puts ('s: ' + s.inspect).debug if @debug
     px = Polyrex.new(s)
 
     # transform the polyrex xml into a nested HTML list
     #@ul = Rexslt.new(px.to_xml, XSLT).to_xml
-
+    puts ('px: ' + px.inspect).debug if @debug
+    puts ('px.to_xml: ' + px.to_xml.inspect).debug if @debug
     doc   = Nokogiri::XML(px.to_xml)
     xslt  = Nokogiri::XSLT(XSLT)
 
     @ul = xslt.transform(doc).to_s.lines[1..-1].join
 
+  end
+  
+  def sidebar(opt={})
+    doc = Rexle.new(tree(opt))
+    doc.root.attributes[:class] = 'sidenav'
+    @ul = doc.xml(declaration: false)
   end
 
 end
