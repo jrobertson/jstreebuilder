@@ -8,6 +8,7 @@ require 'polyrex'
 require 'kramdown'
 
 
+
 XSLT = %q[
 <xsl:stylesheet xmlns:xsl='http://www.w3.org/1999/XSL/Transform' version='1.0'>
   <xsl:output method="xml" indent="yes" omit-xml-declaration="yes" />
@@ -176,9 +177,9 @@ SIDEBAR_JS = TREE_JS
 
     attr_reader :to_tree
 
-    def initialize(s, debug: false)
+    def initialize(s, hn: 1, debug: false)
 
-      @debug = debug
+      @debug, @hn = debug, hn
       html = Kramdown::Document.new(s).to_html
       puts ('html: ' + html.inspect) if @debug
       a = scan_headings(html)
@@ -204,7 +205,7 @@ SIDEBAR_JS = TREE_JS
 
     end
     
-    def make_tree(a, indent=0, hn=1)
+    def make_tree(a, indent=0, hn=@hn)
       
       if @debug then
         puts 'inside make_tree'.debug 
@@ -235,7 +236,7 @@ SIDEBAR_JS = TREE_JS
 
     end    
 
-    def scan_headings(s, n=1)
+    def scan_headings(s, n=@hn)
       
       s.split(/(?=<h#{n})/).map do |x| 
         x.include?('<h' + (n+1).to_s) ? scan_headings(x, n+1) : x
@@ -353,7 +354,7 @@ SIDEBAR_JS = TREE_JS
     elsif src =~ /<?polyrex / 
       src
     else
-      build_px(TreeBuilder.new(src, debug: @debug).to_tree)
+      build_px(TreeBuilder.new(src, hn: opt[:hn],debug: @debug).to_tree)
     end
     
     puts ('s: ' + s.inspect).debug if @debug
