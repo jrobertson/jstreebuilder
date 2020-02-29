@@ -352,9 +352,12 @@ SIDEBAR_JS = TREE_JS
       build_px(src)
       
     elsif src =~ /<?polyrex / 
-      src
-    else
+      src      
+    elsif src =~ /^#+/
       build_px(TreeBuilder.new(src, hn: opt[:hn],debug: @debug).to_tree)
+    else
+      "<?polyrex schema='entries[title]/entry[title,url]' \
+          delimiter=' # '?>\n\n" + src.lstrip
     end
     
     puts ('s: ' + s.inspect).debug if @debug
