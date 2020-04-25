@@ -8,7 +8,6 @@ require 'polyrex'
 require 'kramdown'
 
 
-
 XSLT = %q[
 <xsl:stylesheet xmlns:xsl='http://www.w3.org/1999/XSL/Transform' version='1.0'>
   <xsl:output method="xml" indent="yes" omit-xml-declaration="yes" />
@@ -129,6 +128,8 @@ body {
   z-index: 1;
   top: 20px;
   left: 10px;
+  height: 90%;
+  overflow: auto;
   background: #eee;
   overflow-x: hidden;
   padding: 12px 0;
