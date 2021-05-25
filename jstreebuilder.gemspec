@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = 'jstreebuilder'
-  s.version = '0.3.0'
+  s.version = '0.3.1'
   s.summary = 'Generates an HTML tree from XML or Markdown.'
   s.authors = ['James Robertson']
   s.files = Dir['lib/jstreebuilder.rb']

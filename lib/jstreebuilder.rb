@@ -16,15 +16,15 @@ XSLT = %q[
 
     <xsl:element name='ul'>
       <xsl:attribute name='id'>myUL</xsl:attribute>
-      <xsl:apply-templates select='records/entry' />
+      <xsl:apply-templates select='records/link' />
     </xsl:element>
 
   </xsl:template>
 
-  <xsl:template match='entry'>
+  <xsl:template match='link'>
 
     <xsl:choose>
-      <xsl:when test='records/entry'>
+      <xsl:when test='records/link'>
 
         <xsl:element name='li'>
 
@@ -43,7 +43,7 @@ XSLT = %q[
             </xsl:choose>
           </xsl:element>
           <ul class='nested'>
-            <xsl:apply-templates select='records/entry' />
+            <xsl:apply-templates select='records/link' />
           </ul>
         </xsl:element>
 
@@ -78,15 +78,15 @@ PLAIN = %q[
 
     <xsl:element name='ul'>
       <xsl:attribute name='id'>myUL</xsl:attribute>
-      <xsl:apply-templates select='records/entry' />
+      <xsl:apply-templates select='records/link' />
     </xsl:element>
 
   </xsl:template>
 
-  <xsl:template match='entry'>
+  <xsl:template match='link'>
 
     <xsl:choose>
-      <xsl:when test='records/entry'>
+      <xsl:when test='records/link'>
 
         <xsl:element name='li'>
 
@@ -103,7 +103,7 @@ PLAIN = %q[
           </xsl:choose>
         </xsl:element>
         <ul>
-          <xsl:apply-templates select='records/entry' />
+          <xsl:apply-templates select='records/link' />
         </ul>
 
 
@@ -407,7 +407,7 @@ PLAIN_JS = ''
   
   def build_px(tree)
     
-    schema = 'entries/entry[title, url]'
+    schema = 'entries/link[title, url]'
     xslt_schema = 'tree/item[@title:title, @url:url]'
 
     # transform the tree xml into a polyrex document
@@ -420,30 +420,36 @@ PLAIN_JS = ''
 
   def tree(opt={}, xslt=XSLT)
 
-    raw_src = opt[:src]  
+    raw_src = opt[:src]
     
-    src, _ = RXFHelper.read raw_src
+    px = if raw_src.is_a? String then
     
-    header = "<?polyrex schema='entries[title]/entry[title,url]' \
-          delimiter=' # '?>\n\n"
-    
-    s = if src =~ /<tree>/ then
+      src, _ = RXFHelper.read raw_src
       
-      build_px(src)
+      header = "<?polyrex schema='entries[title]/link[title,url]' \
+            delimiter=' # '?>\n\n"
       
-    elsif src =~ /<\?polyrex-links\?>/ 
-      header + src.sub(/<\?polyrex-links\?>/,'').lstrip
-    elsif src =~ /<\?polyrex / 
-      src      
-    elsif src =~ /^#+/
-      build_px(TreeBuilder.new(src, hn: opt[:hn],debug: @debug).to_tree)
-    else
-      header + src.lstrip
+      s = if src =~ /<tree>/ then
+        
+        build_px(src)
+        
+      elsif src =~ /<\?polyrex-links\?>/ 
+        header + src.sub(/<\?polyrex-links\?>/,'').lstrip
+      elsif src =~ /<\?polyrex / 
+        src      
+      elsif src =~ /^#+/
+        build_px(TreeBuilder.new(src, hn: opt[:hn],debug: @debug).to_tree)
+      else
+        header + src.lstrip
+      end
+      
+      puts ('s: ' + s.inspect).debug if @debug
+      Polyrex.new(s)
+      
+    elsif raw_src.is_a?(Polyrex) # detects PolyrexLinks as Polyrex too
+      raw_src
     end
     
-    puts ('s: ' + s.inspect).debug if @debug
-    px = Polyrex.new(s)
-
     # transform the polyrex xml into a nested HTML list
     #@ul = Rexslt.new(px.to_xml, XSLT).to_xml
     puts ('px: ' + px.inspect).debug if @debug
