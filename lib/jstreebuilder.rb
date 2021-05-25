@@ -70,6 +70,66 @@ XSLT = %q[
 </xsl:stylesheet>
 ]
 
+PLAIN = %q[
+<xsl:stylesheet xmlns:xsl='http://www.w3.org/1999/XSL/Transform' version='1.0'>
+  <xsl:output method="xml" indent="yes" omit-xml-declaration="yes" />
+
+  <xsl:template match='entries'>
+
+    <xsl:element name='ul'>
+      <xsl:attribute name='id'>myUL</xsl:attribute>
+      <xsl:apply-templates select='records/entry' />
+    </xsl:element>
+
+  </xsl:template>
+
+  <xsl:template match='entry'>
+
+    <xsl:choose>
+      <xsl:when test='records/entry'>
+
+        <xsl:element name='li'>
+
+          <xsl:choose>
+            <xsl:when test='summary/url != ""'>
+            <xsl:element name='a'>
+              <xsl:attribute name='href'><xsl:value-of select='summary/url'/></xsl:attribute>
+              <xsl:value-of select='summary/title'/>      
+            </xsl:element>
+            </xsl:when>
+            <xsl:otherwise>
+          <xsl:value-of select='summary/title'/>      
+            </xsl:otherwise>
+          </xsl:choose>
+        </xsl:element>
+        <ul>
+          <xsl:apply-templates select='records/entry' />
+        </ul>
+
+
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:element name='li'>      
+          <xsl:choose>
+            <xsl:when test='summary/url != ""'>
+            <xsl:element name='a'>
+              <xsl:attribute name='href'><xsl:value-of select='summary/url'/></xsl:attribute>
+              <xsl:value-of select='summary/title'/>      
+            </xsl:element>
+            </xsl:when>
+            <xsl:otherwise>
+          <xsl:value-of select='summary/title'/>      
+            </xsl:otherwise>
+          </xsl:choose>
+        </xsl:element>
+      </xsl:otherwise>
+      </xsl:choose>
+
+  </xsl:template>
+
+</xsl:stylesheet>
+]
+
 
 class JsTreeBuilder
   using ColouredText
@@ -159,6 +219,18 @@ body {
 }
 ]
 
+PLAIN_CSS = "
+ul {
+  list-style-type: none; 
+  background-color: transparent; 
+  margin: 0.1em 0.1em; padding: 0.3em 1.3em
+}
+ul li {
+  background-color: transparent; 
+  margin: 0.1em 0.1em; padding: 0.3em 0.3em
+}
+"
+
 TREE_JS =<<EOF
 var toggler = document.getElementsByClassName("caret");
 var i;
@@ -172,6 +244,8 @@ for (i = 0; i < toggler.length; i++) {
 EOF
 
 SIDEBAR_JS = TREE_JS
+
+PLAIN_JS = ''
 
   class TreeBuilder
     using ColouredText
@@ -261,7 +335,7 @@ SIDEBAR_JS = TREE_JS
     
     @debug = options[:debug]
 
-    @types = %i(tree sidebar)
+    @types = %i(tree sidebar plain)
     
     build(type, options) if type
 
@@ -326,8 +400,8 @@ SIDEBAR_JS = TREE_JS
     @html = s.gsub(/<\/div>/,'\0' + "\n").strip.lines[1..-2]\
       .map {|x| x.sub(/^  /,'') }.join
     
-    @css = Object.const_get 'JsTreeBuilder::' + type.to_s.upcase + '_CSS'
-    @js = Object.const_get 'JsTreeBuilder::' + type.to_s.upcase + '_JS'        
+    @css = type.to_s.upcase + '_CSS'
+    @js = type.to_s.upcase + '_JS'        
   
   end
   
@@ -344,21 +418,27 @@ SIDEBAR_JS = TREE_JS
   end
   
 
-  def tree(opt={})
+  def tree(opt={}, xslt=XSLT)
 
-    src = opt[:src]  
+    raw_src = opt[:src]  
+    
+    src, _ = RXFHelper.read raw_src
+    
+    header = "<?polyrex schema='entries[title]/entry[title,url]' \
+          delimiter=' # '?>\n\n"
     
     s = if src =~ /<tree>/ then
       
       build_px(src)
       
-    elsif src =~ /<?polyrex / 
+    elsif src =~ /<\?polyrex-links\?>/ 
+      header + src.sub(/<\?polyrex-links\?>/,'').lstrip
+    elsif src =~ /<\?polyrex / 
       src      
     elsif src =~ /^#+/
       build_px(TreeBuilder.new(src, hn: opt[:hn],debug: @debug).to_tree)
     else
-      "<?polyrex schema='entries[title]/entry[title,url]' \
-          delimiter=' # '?>\n\n" + src.lstrip
+      header + src.lstrip
     end
     
     puts ('s: ' + s.inspect).debug if @debug
@@ -369,7 +449,7 @@ SIDEBAR_JS = TREE_JS
     puts ('px: ' + px.inspect).debug if @debug
     puts ('px.to_xml: ' + px.to_xml.inspect).debug if @debug
     doc   = Nokogiri::XML(px.to_xml)
-    xslt  = Nokogiri::XSLT(XSLT)
+    xslt  = Nokogiri::XSLT(xslt)
 
     @ul = xslt.transform(doc).to_s.lines[1..-1].join
 
@@ -380,5 +460,9 @@ SIDEBAR_JS = TREE_JS
     doc.root.attributes[:class] = 'sidenav'
     @ul = doc.xml(declaration: false)
   end
+  
+  def plain(opt={})
+    tree opt, PLAIN
+  end  
 
 end
