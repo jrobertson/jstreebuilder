@@ -28,17 +28,17 @@ XSLT = %q[
 
         <xsl:element name='li'>
 
-          <xsl:element name='span'>      
+          <xsl:element name='span'>
             <xsl:attribute name="class">caret</xsl:attribute>
             <xsl:choose>
               <xsl:when test='summary/url != ""'>
               <xsl:element name='a'>
                 <xsl:attribute name='href'><xsl:value-of select='summary/url'/></xsl:attribute>
-                <xsl:value-of select='summary/title'/>      
+                <xsl:value-of select='summary/title'/>
               </xsl:element>
               </xsl:when>
               <xsl:otherwise>
-            <xsl:value-of select='summary/title'/>      
+            <xsl:value-of select='summary/title'/>
               </xsl:otherwise>
             </xsl:choose>
           </xsl:element>
@@ -49,16 +49,16 @@ XSLT = %q[
 
       </xsl:when>
       <xsl:otherwise>
-        <xsl:element name='li'>      
+        <xsl:element name='li'>
           <xsl:choose>
             <xsl:when test='summary/url != ""'>
             <xsl:element name='a'>
               <xsl:attribute name='href'><xsl:value-of select='summary/url'/></xsl:attribute>
-              <xsl:value-of select='summary/title'/>      
+              <xsl:value-of select='summary/title'/>
             </xsl:element>
             </xsl:when>
             <xsl:otherwise>
-          <xsl:value-of select='summary/title'/>      
+          <xsl:value-of select='summary/title'/>
             </xsl:otherwise>
           </xsl:choose>
         </xsl:element>
@@ -94,11 +94,11 @@ PLAIN = %q[
             <xsl:when test='summary/url != ""'>
             <xsl:element name='a'>
               <xsl:attribute name='href'><xsl:value-of select='summary/url'/></xsl:attribute>
-              <xsl:value-of select='summary/title'/>      
+              <xsl:value-of select='summary/title'/>
             </xsl:element>
             </xsl:when>
             <xsl:otherwise>
-          <xsl:value-of select='summary/title'/>      
+          <xsl:value-of select='summary/title'/>
             </xsl:otherwise>
           </xsl:choose>
         </xsl:element>
@@ -109,16 +109,16 @@ PLAIN = %q[
 
       </xsl:when>
       <xsl:otherwise>
-        <xsl:element name='li'>      
+        <xsl:element name='li'>
           <xsl:choose>
             <xsl:when test='summary/url != ""'>
             <xsl:element name='a'>
               <xsl:attribute name='href'><xsl:value-of select='summary/url'/></xsl:attribute>
-              <xsl:value-of select='summary/title'/>      
+              <xsl:value-of select='summary/title'/>
             </xsl:element>
             </xsl:when>
             <xsl:otherwise>
-          <xsl:value-of select='summary/title'/>      
+          <xsl:value-of select='summary/title'/>
             </xsl:otherwise>
           </xsl:choose>
         </xsl:element>
@@ -148,7 +148,7 @@ ul, #myUL {
 
 /* Style the caret/arrow */
 .caret {
-  cursor: pointer; 
+  cursor: pointer;
   user-select: none; /* Prevent text selection */
 }
 
@@ -162,7 +162,7 @@ ul, #myUL {
 
 /* Rotate the caret/arrow icon when clicked on (using JavaScript) */
 .caret-down::before {
-  transform: rotate(90deg); 
+  transform: rotate(90deg);
 }
 
 /* Hide the nested list */
@@ -177,7 +177,7 @@ ul, #myUL {
 ]
 
 SIDEBAR_CSS = TREE_CSS + %q[
-  
+
 body {
   font-family: "Lato", sans-serif;
 }
@@ -221,12 +221,12 @@ body {
 
 PLAIN_CSS = "
 ul {
-  list-style-type: none; 
-  background-color: transparent; 
+  list-style-type: none;
+  background-color: transparent;
   margin: 0.1em 0.1em; padding: 0.3em 1.3em
 }
 ul li {
-  background-color: transparent; 
+  background-color: transparent;
   margin: 0.1em 0.1em; padding: 0.3em 0.3em
 }
 "
@@ -259,42 +259,42 @@ PLAIN_JS = ''
       puts ('html: ' + html.inspect) if @debug
       a = scan_headings(html)
       puts ('a: ' + a.inspect) if @debug
-      
+
       s2 = make_tree(a)
       puts ('s2: ' + s2.inspect) if @debug
       tree = LineTree.new(s2).to_tree
-      
+
       puts ('tree: ' + tree.inspect).debug if @debug
-      
+
       doc = Rexle.new(tree)
       doc.root.each_recursive do |node|
-        
-        h = node.attributes        
+
+        h = node.attributes
         puts ('h: ' + h.inspect).debug if @debug
         h[:url] = '#' + h[:title].strip.downcase.gsub(' ', '-')
-        
+
       end
       puts ('doc.xml: ' + doc.xml.inspect) if @debug
-      
+
       @to_tree = doc.xml pretty: true
 
     end
-    
+
     def make_tree(a, indent=0, hn=@hn)
-      
+
       if @debug then
-        puts 'inside make_tree'.debug 
+        puts 'inside make_tree'.debug
         puts ('a: ' + a.inspect).debug
       end
-      
+
       a.map.with_index do |x, i|
-        
+
         puts ('x: ' + x.inspect).debug if @debug
-        
+
         if x.is_a? Array then
 
           puts 'before make_tree()'.info if @debug
-          
+
           make_tree(x, indent+1, hn)
 
         else
@@ -309,11 +309,11 @@ PLAIN_JS = ''
 
       end.compact.join("\n")
 
-    end    
+    end
 
     def scan_headings(s, n=@hn)
-      
-      s.split(/(?=<h#{n})/).map do |x| 
+
+      s.split(/(?=<h#{n})/).map do |x|
         x.include?('<h' + (n+1).to_s) ? scan_headings(x, n+1) : x
       end
 
@@ -325,42 +325,42 @@ PLAIN_JS = ''
   attr_reader :html, :css, :js
 
   def initialize(unknown=nil, options={})
-    
+
     if unknown.is_a? String or unknown.is_a? Symbol then
       type = unknown.to_sym
     elsif unknown.is_a? Hash
       options = {type: :tree}.merge(unknown)
       type = options[:type]
     end
-    
+
     @debug = options[:debug]
 
     @types = %i(tree sidebar plain)
-    
+
     build(type, options) if type
 
   end
-  
+
   def to_css()
     @css
   end
-  
+
   def to_html()
     @html
   end
-  
+
   def to_js()
     @js
   end
-  
+
   def to_ul()
     @ul
   end
-  
+
   def to_webpage()
 
     a = RexleBuilder.build do |xml|
-      xml.html do 
+      xml.html do
         xml.head do
           xml.meta name: "viewport", content: \
               "width=device-width, initial-scale=1"
@@ -370,105 +370,111 @@ PLAIN_JS = ''
       end
     end
 
-    doc = Rexle.new(a)    
-    
+    doc = Rexle.new(a)
+
     doc.root.element('body').add \
-        Rexle::Element.new('script').add_text "\n" + 
+        Rexle::Element.new('script').add_text "\n" +
         @js.gsub(/^ +\/\/[^\n]+\n/,'')
-    
+
     "<!DOCTYPE html>\n" + doc.xml(pretty: true, declaration: false)\
         .gsub(/<\/div>/,'\0' + "\n").gsub(/\n *<!--[^>]+>/,'')
-    
+
   end
-  
+
   def to_xml()
     @xml
   end
-  
-  
+
+
   private
-  
+
   def build(type, options)
-    
+
     puts 'inside build'.info if @debug
-    puts "type: %s\noptions: %s".debug % [type, options] if @debug    
-    
+    puts "type: %s\noptions: %s".debug % [type, options] if @debug
+
     return unless @types.include? type.to_sym
-    
+
     s = method(type.to_sym).call(options)
-    
+
     @html = s.gsub(/<\/div>/,'\0' + "\n").strip.lines[1..-2]\
       .map {|x| x.sub(/^  /,'') }.join
-    
-    @css = type.to_s.upcase + '_CSS'
-    @js = type.to_s.upcase + '_JS'        
-  
+
+    @css = Object.const_get self.class.to_s + '::' + type.to_s.upcase + '_CSS'
+    @js = Object.const_get self.class.to_s + '::' + type.to_s.upcase + '_JS'
+
   end
-  
+
   def build_px(tree)
-    
+
     schema = 'entries/link[title, url]'
     xslt_schema = 'tree/item[@title:title, @url:url]'
 
     # transform the tree xml into a polyrex document
     pxsl = PolyrexXSLT.new(schema: schema, xslt_schema: xslt_schema).to_xslt
     puts 'pxsl: ' + pxsl if @debug
-    Rexslt.new(pxsl, tree).to_s    
-    
+    Rexslt.new(pxsl, tree).to_s
+
   end
-  
+
 
   def tree(opt={}, xslt=XSLT)
 
+    puts 'inside tree' if @debug
+
     raw_src = opt[:src]
-    
+
     px = if raw_src.is_a? String then
-    
+
       src, _ = RXFHelper.read raw_src
-      
+
       header = "<?polyrex schema='entries[title]/link[title,url]' \
             delimiter=' # '?>\n\n"
-      
+
       s = if src =~ /<tree>/ then
-        
+
         build_px(src)
-        
-      elsif src =~ /<\?polyrex-links\?>/ 
+
+      elsif src =~ /<\?polyrex-links\?>/
         header + src.sub(/<\?polyrex-links\?>/,'').lstrip
-      elsif src =~ /<\?polyrex / 
-        src      
+      elsif src =~ /<\?polyrex /
+        src
       elsif src =~ /^#+/
         build_px(TreeBuilder.new(src, hn: opt[:hn],debug: @debug).to_tree)
       else
         header + src.lstrip
       end
-      
+
       puts ('s: ' + s.inspect).debug if @debug
       Polyrex.new(s)
-      
+
     elsif raw_src.is_a?(Polyrex) # detects PolyrexLinks as Polyrex too
       raw_src
     end
-    
+
     # transform the polyrex xml into a nested HTML list
     #@ul = Rexslt.new(px.to_xml, XSLT).to_xml
     puts ('px: ' + px.inspect).debug if @debug
     puts ('px.to_xml: ' + px.to_xml.inspect).debug if @debug
+
     doc   = Nokogiri::XML(px.to_xml)
     xslt  = Nokogiri::XSLT(xslt)
 
     @ul = xslt.transform(doc).to_s.lines[1..-1].join
+    puts '@ul:' + @ul.inspect if @debug
+
+    return @ul
 
   end
-  
+
   def sidebar(opt={})
     doc = Rexle.new(tree(opt))
     doc.root.attributes[:class] = 'sidenav'
     @ul = doc.xml(declaration: false)
   end
-  
+
   def plain(opt={})
     tree opt, PLAIN
-  end  
+  end
 
 end
