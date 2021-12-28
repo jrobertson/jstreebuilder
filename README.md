@@ -19,7 +19,7 @@
         <item title='apple'/>
       </item>
       <item title='mealtime'>
-        <item title='melon' url='http://a0.jamesrobertson.eu'/>
+        <item title='melon' url='http://a0.jamesrobertson.me.uk'/>
         <item title='cheese burger'/>
         <item title='milk shake'/>
       </item>
@@ -31,7 +31,7 @@
     ## or
 
     tree ="
-    <?polyrex schema='entries[title]/entry[title,url]' delimiter=' # '?>
+    <?polyrex schema='entries[title]/link[title,url]' delimiter=' # '?>
     title: Links to Foo
 
     foo bar # http://someexamplewebsite.com/do/fun/rrr
@@ -49,6 +49,6 @@
 
 Screenshot as observed from the browser window:
 
-![](http://a0.jamesrobertson.eu/r/images/2019/sep/15/jstree.png)
+![](http://www.jamesrobertson.me.uk/r/images/2019/sep/15/jstree.png)
 
 jstreebuilder tree
